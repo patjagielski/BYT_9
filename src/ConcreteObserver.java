@@ -1,5 +1,5 @@
 public class ConcreteObserver extends Observer {
-
+    private int id;
     public ConcreteObserver(Subject subject){
         this.subject = subject;
         this.subject.addObserver(this);

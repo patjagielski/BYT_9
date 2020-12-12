@@ -3,20 +3,31 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.URL;
 import java.net.URLConnection;
-import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
 
 public class Subject implements Runnable {
     private List<Observer> observers = new ArrayList<Observer>();
     private long state;
     private String URL;
     private Momento savedState;
+    private Observer observer;
+    private HashMap<Observer, String> observedWebpages;
+    //Create dictionary of Observers and URL X
+    //When assigning a Observer to URL first check if an Observer is already watching
+    //  if so then use that Observer, else create a new Observer for that URL and add it to the dictionary
+    //Write to file the URL and the Observer specific to that URL
 
     public Subject(List<Observer> observers, String URL){
         this.observers = observers;
         this.URL =  URL;
+    }
+
+    public HashMap<Observer, String> getObservedWebpages() {
+        return observedWebpages;
+    }
+
+    public void setObservedWebpages(HashMap<Observer, String> observedWebpages) {
+        this.observedWebpages = observedWebpages;
     }
 
     public List<Observer> getObservers() {
@@ -52,6 +63,10 @@ public class Subject implements Runnable {
         this.URL = URL;
     }
 
+    public void addToDictionary(Observer observer, String url){
+        this.observedWebpages.put(observer, url);
+    }
+
     public Momento save(){
         return new Momento(getState());
     }
@@ -64,7 +79,7 @@ public class Subject implements Runnable {
         FileWriter file = new FileWriter("src/WebpageState/newStates");
         PrintWriter writer = new PrintWriter(file);
         Date date = Calendar.getInstance().getTime();
-        writer.println("New change at: " + getURL() + " with new state of " + savedState.getState() + " at " + date.toString() );
+        writer.println("New change at: " + getURL() + " with new state of " + savedState.getState() + " at " + date.toString() + " being watched by: " + getObserver());
         writer.close();
     }
     public void returnToPrevState(){
@@ -75,6 +90,11 @@ public class Subject implements Runnable {
     public void run() {
         System.out.println("thread is running");
         while (true) {
+            //check if this is new URL or old URL
+            if(!this.observedWebpages.containsValue(getURL())){
+                //if this URL does not exists then get that Observer instead of creating new one
+                addToDictionary(this.observer, this.URL);
+            }
             //Connect to URL
             try {
                 URL address = new URL(getURL());
@@ -101,4 +121,11 @@ public class Subject implements Runnable {
     }
 
 
+    public Observer getObserver() {
+        return observer;
+    }
+
+    public void setObserver(Observer observer) {
+        this.observer = observer;
+    }
 }
