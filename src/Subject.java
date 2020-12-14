@@ -3,7 +3,11 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.URL;
 import java.net.URLConnection;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
+import java.util.stream.Stream;
 
 public class Subject implements Runnable {
     private List<Observer> observers = new ArrayList<Observer>();
@@ -70,6 +74,7 @@ public class Subject implements Runnable {
     public Momento save(){
         return new Momento(getState());
     }
+
     public void rollbackState(Momento prevState){
         this.state = prevState.getState();
     }
@@ -79,8 +84,21 @@ public class Subject implements Runnable {
         FileWriter file = new FileWriter("src/WebpageState/newStates");
         PrintWriter writer = new PrintWriter(file);
         Date date = Calendar.getInstance().getTime();
-        writer.println("New change at: " + getURL() + " with new state of " + savedState.getState() + " at " + date.toString() + " being watched by: " + getObserver());
+        writer.println("New change at: " + getURL() + " with new state of " + savedState.getState()  + " being watched by: ");
         writer.close();
+    }
+    public String getSavedState(){
+        Path path = Paths.get("src/WebpageState/newStates");
+
+        StringBuilder sb = new StringBuilder();
+
+        try (Stream<String> stream = Files.lines(path)) {
+            stream.forEach(s -> sb.append(s).append("\n"));
+
+        } catch (IOException ex) {
+            // Handle exception
+        }
+        return sb.toString();
     }
     public void returnToPrevState(){
         this.rollbackState(this.savedState);
@@ -91,9 +109,11 @@ public class Subject implements Runnable {
         System.out.println("thread is running");
         while (true) {
             //check if this is new URL or old URL
-            if(!this.observedWebpages.containsValue(getURL())){
-                //if this URL does not exists then get that Observer instead of creating new one
-                addToDictionary(this.observer, this.URL);
+            if(this.observedWebpages != null){
+                if(this.observedWebpages.containsValue(getURL())) {
+                    //if this URL does not exists then get that Observer instead of creating new one
+                    addToDictionary(this.observer, this.URL);
+                }
             }
             //Connect to URL
             try {
